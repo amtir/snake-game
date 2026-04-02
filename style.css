@@ -1,0 +1,128 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.game-container {
+    text-align: center;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.game-header h1 {
+    font-size: 2.5em;
+    margin-bottom: 20px;
+    color: #fff;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.score-board {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    font-size: 1.2em;
+    font-weight: bold;
+}
+
+.game-area {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 20px;
+}
+
+#gameCanvas {
+    border: 3px solid #fff;
+    background-color: #000;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.game-over {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.9);
+    padding: 30px;
+    border-radius: 10px;
+    text-align: center;
+    border: 2px solid #fff;
+}
+
+.game-over h2 {
+    color: #ff4757;
+    margin-bottom: 15px;
+    font-size: 1.8em;
+}
+
+.game-over p {
+    margin-bottom: 20px;
+    font-size: 1.2em;
+}
+
+.hidden {
+    display: none;
+}
+
+#restartBtn {
+    padding: 12px 25px;
+    font-size: 1.1em;
+    background: linear-gradient(45deg, #ff6b6b, #ff4757);
+    color: white;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: bold;
+}
+
+#restartBtn:hover {
+    background: linear-gradient(45deg, #ff5252, #ff3742);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 71, 87, 0.4);
+}
+
+.controls {
+    color: #ddd;
+    font-size: 0.9em;
+    line-height: 1.5;
+}
+
+.controls p {
+    margin-bottom: 5px;
+}
+
+@media (max-width: 480px) {
+    .game-container {
+        padding: 20px;
+    }
+    
+    #gameCanvas {
+        width: 300px;
+        height: 300px;
+    }
+    
+    .game-header h1 {
+        font-size: 2em;
+    }
+    
+    .score-board {
+        font-size: 1em;
+        flex-direction: column;
+        gap: 5px;
+    }
+}
