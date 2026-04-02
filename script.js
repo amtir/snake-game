@@ -11,11 +11,13 @@ Version: 1.0
 
 Features:
 - Classic Snake gameplay with collision detection
-- Progressive difficulty (increasing speed)
+- Dynamic obstacle system with 6+ unique levels
+- Progressive difficulty (increasing speed + obstacle complexity)
 - Score tracking with persistent high scores
+- Level progression every 50 points
 - Pause/resume functionality
 - Responsive controls (Arrow keys, WASD, Space)
-- Modern UI with game over screen
+- Modern UI with game over screen and level notifications
 - Cross-platform compatible
 
 Game Controls:
@@ -35,6 +37,7 @@ class SnakeGame {
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
         this.scoreElement = document.getElementById('score');
+        this.levelElement = document.getElementById('level');
         this.highScoreElement = document.getElementById('highScore');
         this.gameOverElement = document.getElementById('gameOver');
         this.finalScoreElement = document.getElementById('finalScore');
@@ -47,9 +50,11 @@ class SnakeGame {
         // Game state variables
         this.snake = [{ x: 10, y: 10 }]; // Snake starts as single segment in center
         this.food = {}; // Food position object
+        this.obstacles = []; // Array of obstacle positions {x, y}
         this.dx = 0; // Horizontal movement direction (-1, 0, 1)
         this.dy = 0; // Vertical movement direction (-1, 0, 1)
         this.score = 0; // Current game score
+        this.level = 1; // Current difficulty level
         this.highScore = localStorage.getItem('snakeHighScore') || 0; // Persistent high score
         this.gameRunning = false; // Whether game is actively running
         this.gamePaused = false; // Whether game is paused
@@ -64,6 +69,7 @@ class SnakeGame {
     init() {
         this.updateHighScoreDisplay();
         this.generateFood();
+        this.generateObstacles(); // Generate initial obstacles
         this.setupEventListeners();
         this.gameLoop();
     }
@@ -167,20 +173,168 @@ class SnakeGame {
     
     /**
      * Generate food at a random location on the grid
-     * Ensures food doesn't spawn on the snake's body
+     * Ensures food doesn't spawn on the snake's body or obstacles
      */
     generateFood() {
-        // Generate random coordinates within the grid
-        this.food = {
-            x: Math.floor(Math.random() * this.tileCount),
-            y: Math.floor(Math.random() * this.tileCount)
-        };
-        
-        // Check if food spawned on snake body - if so, try again
+        // Keep trying until we find a free position
+        do {
+            this.food = {
+                x: Math.floor(Math.random() * this.tileCount),
+                y: Math.floor(Math.random() * this.tileCount)
+            };
+        } while (this.isPositionOccupied(this.food.x, this.food.y));
+    }
+
+    /**
+     * Check if a position is occupied by snake, food, or obstacles
+     * @param {number} x - X coordinate to check
+     * @param {number} y - Y coordinate to check
+     * @returns {boolean} - True if position is occupied
+     */
+    isPositionOccupied(x, y) {
+        // Check snake segments
         for (let segment of this.snake) {
-            if (segment.x === this.food.x && segment.y === this.food.y) {
-                this.generateFood(); // Recursive call to find new position
-                return;
+            if (segment.x === x && segment.y === y) return true;
+        }
+        
+        // Check obstacles
+        for (let obstacle of this.obstacles) {
+            if (obstacle.x === x && obstacle.y === y) return true;
+        }
+        
+        return false;
+    }
+
+    /**
+     * Generate obstacles based on current level
+     */
+    generateObstacles() {
+        if (this.level <= 2) {
+            this.generateRandomObstacles(this.level * 3); // 3, 6 obstacles
+        } else {
+            this.generatePatternObstacles();
+        }
+    }
+
+    /**
+     * Generate random obstacles on the board
+     * @param {number} count - Number of obstacles to create
+     */
+    generateRandomObstacles(count = 5) {
+        this.obstacles = [];
+        for (let i = 0; i < count; i++) {
+            let obstacle;
+            let attempts = 0;
+            do {
+                obstacle = {
+                    x: Math.floor(Math.random() * this.tileCount),
+                    y: Math.floor(Math.random() * this.tileCount)
+                };
+                attempts++;
+            } while (this.isPositionOccupied(obstacle.x, obstacle.y) && attempts < 50);
+            
+            if (attempts < 50) {
+                this.obstacles.push(obstacle);
+            }
+        }
+    }
+
+    /**
+     * Generate obstacles in predefined patterns based on level
+     */
+    generatePatternObstacles() {
+        this.obstacles = [];
+        switch (this.level) {
+            case 3:
+                this.createBorderPattern();
+                break;
+            case 4:
+                this.createCrossPattern();
+                break;
+            case 5:
+                this.createMazePattern();
+                break;
+            default:
+                // For levels 6+, combine patterns
+                this.createRandomMaze();
+                break;
+        }
+    }
+
+    /**
+     * Create obstacles around the border edges
+     */
+    createBorderPattern() {
+        const border = 3;
+        for (let i = border; i < this.tileCount - border; i += 2) {
+            // Top and bottom borders
+            this.obstacles.push(
+                {x: i, y: border}, 
+                {x: i, y: this.tileCount - border - 1}
+            );
+            // Left and right borders
+            this.obstacles.push(
+                {x: border, y: i}, 
+                {x: this.tileCount - border - 1, y: i}
+            );
+        }
+    }
+
+    /**
+     * Create obstacles in a cross pattern
+     */
+    createCrossPattern() {
+        const center = Math.floor(this.tileCount / 2);
+        for (let i = 4; i < this.tileCount - 4; i++) {
+            // Vertical line
+            if (i !== center - 1 && i !== center && i !== center + 1) {
+                this.obstacles.push({x: center, y: i});
+            }
+            // Horizontal line
+            if (i !== center - 1 && i !== center && i !== center + 1) {
+                this.obstacles.push({x: i, y: center});
+            }
+        }
+    }
+
+    /**
+     * Create a simple maze pattern
+     */
+    createMazePattern() {
+        // Create L-shaped corridors
+        for (let i = 0; i < this.tileCount; i += 6) {
+            for (let j = 0; j < this.tileCount; j += 6) {
+                if (i + 3 < this.tileCount && j + 3 < this.tileCount) {
+                    this.obstacles.push(
+                        {x: i + 2, y: j + 2},
+                        {x: i + 3, y: j + 2},
+                        {x: i + 2, y: j + 3}
+                    );
+                }
+            }
+        }
+    }
+
+    /**
+     * Create random maze-like pattern for high levels
+     */
+    createRandomMaze() {
+        const density = Math.min(0.3, 0.1 + (this.level - 6) * 0.02);
+        const targetObstacles = Math.floor(this.tileCount * this.tileCount * density);
+        
+        for (let i = 0; i < targetObstacles; i++) {
+            let obstacle;
+            let attempts = 0;
+            do {
+                obstacle = {
+                    x: Math.floor(Math.random() * this.tileCount),
+                    y: Math.floor(Math.random() * this.tileCount)
+                };
+                attempts++;
+            } while (this.isPositionOccupied(obstacle.x, obstacle.y) && attempts < 100);
+            
+            if (attempts < 100) {
+                this.obstacles.push(obstacle);
             }
         }
     }
@@ -204,6 +358,14 @@ class SnakeGame {
         // Check collision with snake's own body
         for (let segment of this.snake) {
             if (head.x === segment.x && head.y === segment.y) {
+                this.gameOver();
+                return;
+            }
+        }
+        
+        // Check collision with obstacles
+        for (let obstacle of this.obstacles) {
+            if (head.x === obstacle.x && head.y === obstacle.y) {
                 this.gameOver();
                 return;
             }
@@ -261,6 +423,17 @@ class SnakeGame {
             this.gridSize - 2
         );
         
+        // Draw obstacles as brown/gray squares
+        this.ctx.fillStyle = '#8B4513'; // Brown color for obstacles
+        for (let obstacle of this.obstacles) {
+            this.ctx.fillRect(
+                obstacle.x * this.gridSize,
+                obstacle.y * this.gridSize,
+                this.gridSize - 2,
+                this.gridSize - 2
+            );
+        }
+        
         // Show pause indicator when game is paused
         if (this.gamePaused) {
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
@@ -296,10 +469,21 @@ class SnakeGame {
     }
     
     /**
-     * Update score display and check for new high score
+     * Update score display and check for new high score and level progression
      */
     updateScore() {
         this.scoreElement.textContent = this.score;
+        
+        // Check for level progression (every 50 points)
+        const newLevel = Math.floor(this.score / 50) + 1;
+        if (newLevel > this.level) {
+            this.level = newLevel;
+            this.levelElement.textContent = this.level; // Update level display
+            this.generateObstacles(); // Generate new obstacle pattern
+            
+            // Optional: Show level up notification
+            this.showLevelUpMessage();
+        }
         
         // Check if current score beats high score
         if (this.score > this.highScore) {
@@ -308,6 +492,36 @@ class SnakeGame {
             localStorage.setItem('snakeHighScore', this.highScore);
             this.updateHighScoreDisplay();
         }
+    }
+
+    /**
+     * Show a brief level up message
+     */
+    showLevelUpMessage() {
+        // Create temporary overlay
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #FFD700;
+            font-size: 24px;
+            font-weight: bold;
+            z-index: 1000;
+            pointer-events: none;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        `;
+        overlay.textContent = `Level ${this.level}!`;
+        
+        this.canvas.parentElement.appendChild(overlay);
+        
+        // Remove after 2 seconds
+        setTimeout(() => {
+            if (overlay.parentElement) {
+                overlay.parentElement.removeChild(overlay);
+            }
+        }, 2000);
     }
     
     /**
@@ -332,17 +546,21 @@ class SnakeGame {
     restartGame() {
         // Reset all game state variables to starting values
         this.snake = [{ x: 10, y: 10 }]; // Single segment in center
+        this.obstacles = []; // Clear obstacles
         this.dx = 0; // No initial movement
         this.dy = 0;
         this.score = 0;
+        this.level = 1; // Reset to level 1
         this.gameRunning = false; // Wait for space to start
         this.gamePaused = false;
         
         // Reset UI elements
         this.scoreElement.textContent = '0';
+        this.levelElement.textContent = '1';
         this.gameOverElement.classList.add('hidden'); // Hide game over screen
         
-        // Place new food on the board
+        // Generate new obstacles and food
+        this.generateObstacles();
         this.generateFood();
         
         // Redraw the clean game state

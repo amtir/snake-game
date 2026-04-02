@@ -33,9 +33,11 @@ body {
 .score-board {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     margin-bottom: 20px;
     font-size: 1.2em;
     font-weight: bold;
+    gap: 20px;
 }
 
 .game-area {
@@ -124,5 +126,6 @@ body {
         font-size: 1em;
         flex-direction: column;
         gap: 5px;
+        align-items: center;
     }
 }
